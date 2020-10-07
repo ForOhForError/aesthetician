@@ -93,6 +93,17 @@ def aesthetic_action(func):
     func.aesthetic_action = True
     return func
 
+def confirm(message='Are you sure (y/N): '):
+    res = input(message)
+    res = res.strip().lower()
+    return len(res) > 0 and res.startswith('y')
+
+def slot_type(x):
+    x = int(x)
+    if x < 1 or x > 40:
+        raise argparse.ArgumentTypeError("Slot number must be between 1 and 40, inclusive")
+    return x
+
 class AestheticianCLI:
     """
     Class representing the CLI interface for aestheticican
@@ -125,6 +136,10 @@ class AestheticianCLI:
         charfile_path = os.path.join(self.config['xiv_path'],charname)
         return charname, charfile_path
 
+    def get_storagefile_path(self, fname):
+        storagefile_path = os.path.join(self.config['storage_path'],fname)
+        return storagefile_path
+
     def charfile_exists(self, slot):
         charname, charfile_path = self.get_charfile_name_path(slot)
         return os.path.exists(charfile_path) and os.path.isfile(charfile_path)
@@ -137,6 +152,18 @@ class AestheticianCLI:
             datafile.close
             return data
         return None
+
+    def write_storage_data(self, fname, data, force=False):
+        filepath = self.get_storagefile_path(fname)
+        if os.path.exists(filepath) and (not force):
+            if not confirm("File {} already exists. Overwrite? (y/N): ".format(fname)):
+                print("write cancelled")
+                return False
+        with open(filepath, 'wb') as charfile:
+            charfile.write(data)
+        return True
+
+
 
     @aesthetic_action
     def list(self):
@@ -154,10 +181,15 @@ class AestheticianCLI:
         parser = argparse.ArgumentParser(
             description="Backup character appearance to aesthetician's storage directory"
         )
-        parser.add_argument('slot')
+        parser.add_argument('slot', type=slot_type)
         parser.add_argument('filename')
         args = parser.parse_args(sys.argv[2:])
-        print(args.slot, args.filename)
+        data = self.get_slot_data(args.slot)
+        if data == None:
+            print("Slot is not occupied.")
+            return 1
+        self.write_storage_data(args.filename, data)
+        return 0
 
 def main():
     return AestheticianCLI().run()
