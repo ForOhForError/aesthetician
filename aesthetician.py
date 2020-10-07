@@ -154,9 +154,9 @@ class AestheticianCLI:
         return None
 
     def write_slot_data(self, slot, data, force=False):
-        _, filepath = self.get_charfile_name_path(slot)
+        slotname, filepath = self.get_charfile_name_path(slot)
         if os.path.exists(filepath) and (not force):
-            if not confirm("File {} already exists. Overwrite? (y/N): ".format(fname)):
+            if not confirm("Slot {} is already used. Overwrite? (y/N): ".format(slot)):
                 print("write cancelled")
                 return False
         with open(filepath, 'wb') as charfile:
