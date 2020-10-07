@@ -113,9 +113,10 @@ class AestheticianCLI:
     """
     def __init__(self):
         self.parser = argparse.ArgumentParser(
+            prog='aesthetician',
             description='Character appearance manager for Final Fantasy XIV'
         )
-        self.parser.add_argument('action', help='action to take')
+        self.parser.add_argument('action', help='action to take (list | backup)')
 
         self.config = load_conf()
 
@@ -167,6 +168,11 @@ class AestheticianCLI:
 
     @aesthetic_action
     def list(self):
+        parser = argparse.ArgumentParser(
+            prog='aesthetician list',
+            description='list all character appearance data'
+        )
+        args = parser.parse_args(sys.argv[2:])
         for i in range(1,41):
             if self.charfile_exists(i):
                 data = self.get_slot_data(i)
@@ -179,6 +185,7 @@ class AestheticianCLI:
     @aesthetic_action
     def backup(self):
         parser = argparse.ArgumentParser(
+            prog="aesthetician backup",
             description="Backup character appearance to aesthetician's storage directory"
         )
         parser.add_argument('slot', type=slot_type)
