@@ -149,14 +149,15 @@ class AestheticianCLI:
                 print(i,'\t', gender, clan,'\t', comment)
         return 0
     
+    @aesthetic_action
     def backup(self):
         parser = argparse.ArgumentParser(
             description="Backup character appearance to aesthetician's storage directory"
         )
-        parser.add_argument('slot', required=True)
-        parser.add_argument('filename', required=True)
+        parser.add_argument('slot')
+        parser.add_argument('filename')
         args = parser.parse_args(sys.argv[2:])
-        
+        print(args.slot, args.filename)
 
 def main():
     return AestheticianCLI().run()
