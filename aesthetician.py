@@ -190,6 +190,8 @@ class AestheticianCLI:
             description='list all character appearance data'
         )
         args = parser.parse_args(sys.argv[2:])
+
+        print("--- FFXIV character appearance slots ---")
         for i in range(1,41):
             if self.charfile_exists(i):
                 data = self.get_slot_data(i)
@@ -197,6 +199,16 @@ class AestheticianCLI:
                 clan = get_attribute(data, 'ancestry')
                 gender = get_attribute(data, 'gender')
                 print(i,'\t', gender, clan,'\t', comment)
+
+        print("--- Aesthetician saved appearance data ---")
+        storagepath = self.config['storage_path']
+        datafiles = [f for f in os.listdir(storagepath) if os.path.isfile(os.path.join(storagepath, f))]
+        for datafile in datafiles:
+            data = self.get_storage_data(datafile)
+            comment = get_appearance_comment(data)
+            clan = get_attribute(data, 'ancestry')
+            gender = get_attribute(data, 'gender')
+            print(datafile,'\t', gender, clan,'\t', comment)
         return 0
     
     @aesthetic_action
