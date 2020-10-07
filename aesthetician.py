@@ -148,9 +148,26 @@ class AestheticianCLI:
     def get_slot_data(self, slot):
         if self.charfile_exists(slot):
             charname, charfile_path = self.get_charfile_name_path(slot)
-            datafile = open(charfile_path, "rb")
-            data = datafile.read()
-            datafile.close
+            with open(charfile_path, "rb") as datafile:
+                data = datafile.read()
+            return data
+        return None
+
+    def write_slot_data(self, slot, data, force=False):
+        _, filepath = self.get_charfile_name_path(slot)
+        if os.path.exists(filepath) and (not force):
+            if not confirm("File {} already exists. Overwrite? (y/N): ".format(fname)):
+                print("write cancelled")
+                return False
+        with open(filepath, 'wb') as charfile:
+            charfile.write(data)
+        return True
+
+    def get_storage_data(self, fname):
+        storagefile = self.get_storagefile_path(fname)
+        if os.path.exists(storagefile):
+            with open(storagefile, "rb") as datafile:
+                data = datafile.read()
             return data
         return None
 
@@ -186,7 +203,7 @@ class AestheticianCLI:
     def backup(self):
         parser = argparse.ArgumentParser(
             prog="aesthetician backup",
-            description="Backup character appearance to aesthetician's storage directory"
+            description="Backup character appearance from an appearance slot to aesthetician's storage directory"
         )
         parser.add_argument('slot', type=slot_type)
         parser.add_argument('filename')
@@ -196,6 +213,22 @@ class AestheticianCLI:
             print("Slot is not occupied.")
             return 1
         self.write_storage_data(args.filename, data)
+        return 0
+
+    @aesthetic_action
+    def restore(self):
+        parser = argparse.ArgumentParser(
+            prog="aesthetician restore",
+            description="Restore a character appearance from aesthetician's storage directory to an appearance slot"
+        )
+        parser.add_argument('filename')
+        parser.add_argument('slot', type=slot_type)
+        args = parser.parse_args(sys.argv[2:])
+        data = self.get_storage_data(args.filename)
+        if data == None:
+            print("Appearance file does not exist.")
+            return 1
+        self.write_slot_data(args.slot, data)
         return 0
 
 def main():
