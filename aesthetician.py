@@ -142,7 +142,7 @@ class AestheticianCLI:
     def list(self):
         for i in range(1,41):
             if self.charfile_exists(i):
-                data = self.get_charfile_data(i)
+                data = self.get_slot_data(i)
                 comment = get_appearance_comment(data)
                 clan = get_attribute(data, 'ancestry')
                 gender = get_attribute(data, 'gender')
