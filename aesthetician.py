@@ -116,7 +116,7 @@ class AestheticianCLI:
             prog='aesthetician',
             description='Character appearance manager for Final Fantasy XIV'
         )
-        self.parser.add_argument('action', help='action to take (list | backup)')
+        self.parser.add_argument('action', help='action to take (list | backup | restore)')
 
         self.config = load_conf()
 
