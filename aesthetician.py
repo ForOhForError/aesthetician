@@ -5,11 +5,14 @@ import os.path
 import sys
 import argparse
 
+import data_coding as code
+
 # Specifies the layout of the data file
-# Formatted as a tuple of (...)
-dat_file_spec = (
-    (),
-)
+# Formatted as a dict of (name) -> tuple of (offset, length, function to encode, function to decode)
+dat_file_spec = {
+    "ancestry": (0x10, 1, code.ancestry_encode, code.ancestry_decode),
+    "gender": (0x11, 1, code.gender_encode, code.gender_decode),
+}
 
 default_conf = os.path.join(
     os.path.expanduser("~"),
@@ -28,12 +31,34 @@ def write_config(filename=default_conf, data=None):
         path = None
         found = False
         while path == None:
-            path_input = input("Enter local FFXIV path: ")
+            try:
+                path_input = input("Enter local FFXIV path: ")
+            except KeyboardInterrupt:
+                sys.exit(1)
             if os.path.exists(path_input):
                 if os.path.exists(os.path.join(path_input,"FFXIV_BOOT.cfg")):
                     path = path_input
                 else:
                     print("Given directory did not contain FFXIV_BOOT.cfg, path rejected")
+        storage_path = None
+        while storage_path == None:
+            print("You will be prompted for a location for aesthetician to save files it manages (named character files, etc).")
+            print("This location will be created if it does not already exist.")
+            try:
+                path_input = input("Enter storage path: ")
+            except KeyboardInterrupt:
+                sys.exit(1)
+            if os.path.exists(path_input):
+                if os.path.isdir(path_input):
+                    storage_path = path_input
+            else:
+                try:
+                    os.makedirs(path_input)
+                    storage_path = path_input
+                except os.error:
+                    print("Director creation failed, exiting.")
+                    sys.exit(1)
+
         data = {
             'xiv_path': path
         }
@@ -53,6 +78,13 @@ def load_conf(filename=default_conf):
         write_config(filename)
         return load_conf(filename)
 
+def get_attribute(data, attr):
+    if attr in dat_file_spec:
+        entry = dat_file_spec[attr]
+        offset, length, enc, dec = entry
+        segment = data[offset:offset+length]
+        return dec(segment)
+
 def get_appearance_comment(data):
     stringdata = data[comment_offset:]
     return stringdata.decode("utf8")
@@ -62,6 +94,12 @@ def aesthetic_action(func):
     return func
 
 class AestheticianCLI:
+    """
+    Class representing the CLI interface for aestheticican
+
+    class methods with the `@aesthetic_action` decorator
+    are executed from the CLI via `aesthetician [action]`
+    """
     def __init__(self):
         self.parser = argparse.ArgumentParser(
             description='Character appearance manager for Final Fantasy XIV'
@@ -91,12 +129,14 @@ class AestheticianCLI:
         charname, charfile_path = self.get_charfile_name_path(slot)
         return os.path.exists(charfile_path) and os.path.isfile(charfile_path)
 
-    def get_charfile_data(self, slot):
-        charname, charfile_path = self.get_charfile_name_path(slot)
-        datafile = open(charfile_path, "rb")
-        data = datafile.read()
-        datafile.close
-        return data
+    def get_slot_data(self, slot):
+        if self.charfile_exists(slot):
+            charname, charfile_path = self.get_charfile_name_path(slot)
+            datafile = open(charfile_path, "rb")
+            data = datafile.read()
+            datafile.close
+            return data
+        return None
 
     @aesthetic_action
     def list(self):
@@ -104,8 +144,22 @@ class AestheticianCLI:
             if self.charfile_exists(i):
                 data = self.get_charfile_data(i)
                 comment = get_appearance_comment(data)
-                print(i,'\t',comment)
+                clan = get_attribute(data, 'ancestry')
+                gender = get_attribute(data, 'gender')
+                print(i,'\t', gender, clan,'\t', comment)
         return 0
+    
+    def backup(self):
+        parser = argparse.ArgumentParser(
+            description="Backup character appearance to aesthetician's storage directory"
+        )
+        parser.add_argument('slot', required=True)
+        parser.add_argument('filename', required=True)
+        args = parser.parse_args(sys.argv[2:])
+        
+
+def main():
+    return AestheticianCLI().run()
 
 if __name__ == "__main__":
-    sys.exit(AestheticianCLI().run())
+    sys.exit(main())
